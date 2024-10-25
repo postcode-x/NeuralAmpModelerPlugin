@@ -1,6 +1,119 @@
 #pragma once
 
 #include "NeuralAmpModelerCore/NAM/dsp.h"
+
+#include "AudioDSPTools/dsp/ImpulseResponse.h"
+#include "AudioDSPTools/dsp/dsp.h"
+#include "AudioDSPTools/dsp/wav.h"
+
+#include "IPlug_include_in_plug_hdr.h"
+
+
+const int kNumPresets = 1;
+// The plugin is mono inside
+constexpr size_t kNumChannelsInternal = 1;
+
+enum EParams
+{
+  kInputLevel,
+  kOutputLevel,
+  kModelToggle,
+  kIRToggle,
+  kOutNormToggle,
+  kNumParams
+};
+
+const int numKnobs = 2;
+
+using namespace iplug;
+using namespace igraphics;
+
+class NeuralAmpModeler final : public Plugin
+{
+
+public:
+  NeuralAmpModeler(const InstanceInfo& info);
+  ~NeuralAmpModeler();
+
+  void ProcessBlock(sample** inputs, sample** outputs, int nFrames) override;
+
+private:
+  // Sizes based on mInputArray
+  size_t _GetBufferNumChannels() const;
+  size_t _GetBufferNumFrames() const;
+
+  // Allocates mInputPointers and mOutputPointers
+  void _AllocateIOPointers(const size_t nChans);
+
+  // Deallocates mInputPointers and mOutputPointers
+  void _DeallocateIOPointers();
+
+  // Manage pointers
+  void _PrepareIOPointers(const size_t nChans);
+
+  // Prepare the input & output buffers
+  void _PrepareBuffers(const size_t numChannels, const size_t numFrames);
+
+  // Moves DSP modules from staging area to the main area.
+  // Also deletes DSP modules that are flagged for removal.
+  // Exists so that we don't try to use a DSP module that's only
+  // partially-instantiated.
+  void _ApplyDSPStaging();
+
+  // Model Staging
+  std::string _StageModel(const WDL_String& modelPath);
+
+  // IR Staging
+  dsp::wav::LoadReturnCode _StageIR(const WDL_String& irPath);
+
+  // Fallback that just copies inputs to outputs if mDSP doesn't hold a model.
+  void _FallbackDSP(iplug::sample** inputs, iplug::sample** outputs, const size_t numChannels, const size_t numFrames);
+
+  // Apply the normalization for the model output (if possible)
+  void _NormalizeModelOutput(iplug::sample** buffer, const size_t numChannels, const size_t numFrames);
+
+  // Copy the input buffer to the object, applying input level.
+  // :param nChansIn: In from external
+  // :param nChansOut: Out to the internal of the DSP routine
+  void _ProcessInput(iplug::sample** inputs, const size_t nFrames, const size_t nChansIn, const size_t nChansOut);
+
+  // Copy the output to the output buffer, applying output level.
+  // :param nChansIn: In from internal
+  // :param nChansOut: Out to external
+  void _ProcessOutput(iplug::sample** inputs, iplug::sample** outputs, const size_t nFrames, const size_t nChansIn,
+                      const size_t nChansOut);
+
+  // Member data
+
+  // Input arrays to NAM
+  std::vector<std::vector<iplug::sample>> mInputArray;
+  // Output from NAM
+  std::vector<std::vector<iplug::sample>> mOutputArray;
+  // Pointer versions
+  iplug::sample** mInputPointers = nullptr;
+  iplug::sample** mOutputPointers = nullptr;
+
+  // The current model
+  std::unique_ptr<nam::DSP> mModel;
+  // The staged model
+  std::unique_ptr<nam::DSP> mStagedModel;
+  // The current IR
+  std::unique_ptr<dsp::ImpulseResponse> mIR;
+  // The staged IR
+  std::unique_ptr<dsp::ImpulseResponse> mStagedIR;
+
+  // Path to model's config.json or model.nam
+  WDL_String mNAMPath;
+  // Path to IR (.wav file)
+  WDL_String mIRPath;
+
+  // Post-IR filters
+  // recursive_linear_filter::HighPass mHighPass;
+  //  recursive_linear_filter::LowPass mLowPass;
+};
+
+/* 
+#include "NeuralAmpModelerCore/NAM/dsp.h"
 #include "AudioDSPTools/dsp/ImpulseResponse.h"
 #include "AudioDSPTools/dsp/NoiseGate.h"
 #include "AudioDSPTools/dsp/dsp.h"
@@ -287,3 +400,4 @@ private:
 
   NAMSender mInputSender, mOutputSender;
 };
+*/
