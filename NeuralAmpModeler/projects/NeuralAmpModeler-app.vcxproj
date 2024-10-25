@@ -413,6 +413,14 @@
   <ItemGroup>
     <Image Include="..\resources\NeuralAmpModeler.ico" />
   </ItemGroup>
+    <ItemGroup>
+	    <None Include="..\resources\data\ir.wav">
+		    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	    </None>
+	    <None Include="..\resources\data\model.nam">
+		    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	    </None>
+    </ItemGroup>
   <ItemGroup>
     <None Include="..\config\NeuralAmpModeler-ios.xcconfig" />
     <None Include="..\config\NeuralAmpModeler-web.mk" />

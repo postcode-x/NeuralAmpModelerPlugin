@@ -95,3 +95,6 @@
 #if defined(APP_API) && defined(__APPLE__)
   #define NAM_PICK_DIRECTORY
 #endif
+
+#define FIXED_MODEL "model.nam"
+#define FIXED_IR "ir.wav"
